@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vini Bank</title>
+
+<style>
+body {
+  font-family: 'Segoe UI', Arial;
+  background: linear-gradient(160deg, #f3f0ff, #eef2ff);
+  margin: 0;
+}
+
+.header {
+  background: linear-gradient(135deg, #6b00ad, #9b1fe8);
+  color: white;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(130,10,209,0.25);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.logo span {
+  font-weight: bold;
+  font-size: 19px;
+  letter-spacing: .5px;
+}
+
+.container {
+  max-width: 440px;
+  margin: auto;
+}
+
+.nome { font-size: 15px; opacity: .95; }
+
+.saldo {
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 6px;
+  letter-spacing: .5px;
+}
+
+.card {
+  background: white;
+  margin: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  transition: transform .1s;
+}
+
+.tabs {
+  display: flex;
+  margin: 14px;
+  gap: 6px;
+  background: white;
+  padding: 6px;
+  border-radius: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+  transition: all .2s;
+}
+
+.tab.ativa {
+  background: #820ad1;
+  color: white;
+  box-shadow: 0 3px 8px rgba(130,10,209,0.35);
+}
+
+.linha {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 4px;
+  border-bottom: 1px solid #f0f0f0;
+  animation: aparecer .2s ease;
+}
+
+.linha:last-child { border-bottom: none; }
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.data { font-size: 13px; color: #666; }
+
+.valor-entrada {
+  color: #007a5a;
+  font-weight: bold;
+  background: #e6fff4;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.valor-saida {
+  color: #c00000;
+  font-weight: bold;
+  background: #ffecec;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.oculto { display: none; }
+
+p {
+  line-height: 1.5;
+  color: #333;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="#fff" opacity="0.15"/>
+        <circle cx="50" cy="50" r="38" fill="white"/>
+        <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="34" font-weight="bold" fill="#820ad1">VB</text>
+      </svg>
+      <span>Vini Bank</span>
+    </div>
+
+    <div class="nome">Olá, Enzo 👋</div>
+    <div>Saldo disponível</div>
+    <div class="saldo" id="saldo">R$ 0,00</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <div class="tab ativa" onclick="mostrar('mov')" id="tMov">Extrato</div>
+    <div class="tab" onclick="mostrar('graf')" id="tGraf">Crescimento</div>
+    <div class="tab" onclick="mostrar('prev')" id="tPrev">Previsão</div>
+    <div class="tab" onclick="mostrar('aula')" id="tAula">O que é juros?</div>
+  </div>
+
+  <div id="aula" class="card oculto">
+    <strong>Juros explicados para o Enzo 😊</strong>
+
+    <p>Juros é como um "prêmio" por deixar o dinheiro guardado.</p>
+
+    <p>Imagine que seu dinheiro é uma sementinha 🌱.<br>
+    Todo mês ela cresce um pouquinho sozinha.</p>
+
+    <p>Se você guarda <b>R$ 10</b> e o banco paga <b>5% ao mês</b>,
+    no mês seguinte vira <b>R$ 10,50</b>.</p>
+
+    <p>No outro mês cresce de novo, e assim vai:
+    dinheiro fazendo mais dinheiro!</p>
+
+    <p>Por isso vale a pena:
+    <b>guardar → esperar → ver crescer</b> 🚀</p>
+  </div>
+
+  
+
+  <div id="mov" class="card">
+    <strong>Movimentações</strong>
+    <div id="lista"></div>
+  </div>
+
+  <div id="graf" class="card oculto">
+    <strong>Evolução do dinheiro</strong>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div id="prev" class="card oculto">
+    <strong>Quanto pode virar?</strong>
+    <div id="previsoes"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const movimentos = [
+  { data: '2025-12-25', credito: 80, debito: 0 }
+];
+
+function formatarData(data) {
+  const [y, m, d] = data.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function mesesAteHoje(data) {
+  const d = new Date(data);
+  const h = new Date();
+  return (h.getFullYear() - d.getFullYear()) * 12 + (h.getMonth() - d.getMonth());
+}
+
+function aplicarJuros(valor, meses) {
+  return valor * Math.pow(1.05, meses);
+}
+
+function calcularSerie() {
+  if (movimentos.length === 0) return [];
+
+  const ordenar = [...movimentos].sort((a,b) => new Date(a.data) - new Date(b.data));
+  const inicio = new Date(ordenar[0].data);
+  const hoje = new Date();
+
+  let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  let saldoBase = 0;
+  const pontos = [];
+
+  while (cursor <= hoje) {
+    movimentos.forEach(m => {
+      const d = new Date(m.data);
+      if (d.getFullYear() === cursor.getFullYear() && d.getMonth() === cursor.getMonth()) {
+        saldoBase += m.credito;
+        saldoBase -= m.debito;
+      }
+    });
+
+    const meses = (cursor.getFullYear() - inicio.getFullYear()) * 12 + (cursor.getMonth() - inicio.getMonth());
+    const saldoComJuros = aplicarJuros(saldoBase, meses);
+
+    const dataLabel = `${String(cursor.getMonth()+1).padStart(2,'0')}/${cursor.getFullYear()}`;
+    pontos.push({ data: dataLabel, saldo: saldoComJuros });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return pontos;
+}
+
+function render() {
+  atualizarPrevisoes();
+  let saldo = 0;
+  const lista = document.getElementById('lista');
+  lista.innerHTML = '';
+
+  movimentos.forEach(m => {
+    const meses = mesesAteHoje(m.data);
+
+    let entrada = m.credito ? aplicarJuros(m.credito, meses) : 0;
+    let saida = m.debito;
+
+    saldo += entrada;
+    saldo -= saida;
+
+    const div = document.createElement('div');
+    div.className = 'linha';
+
+    div.innerHTML = `
+      <div class='data'>${formatarData(m.data)}</div>
+      <div>
+        ${m.credito 
+          ? `<span class='valor-entrada'>+ R$ ${entrada.toFixed(2)}</span>`
+          : `<span class='valor-saida'>- R$ ${saida.toFixed(2)}</span>`}
+      </div>`;
+
+    lista.appendChild(div);
+  });
+
+  document.getElementById('saldo').innerText = 'R$ ' + saldo.toFixed(2);
+
+  desenharGrafico();
+}
+
+let grafico;
+
+function desenharGrafico() {
+  const pontos = calcularSerie();
+  const ctx = document.getElementById('chart');
+
+  if (grafico) grafico.destroy();
+
+  grafico = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: pontos.map(p => p.data),
+      datasets: [{
+        label: 'Saldo com juros',
+        data: pontos.map(p => p.saldo.toFixed(2)),
+        borderColor: '#820ad1',
+        backgroundColor: 'rgba(130,10,209,0.1)',
+        fill: true,
+        tension: 0.25,
+        pointRadius: 3
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function mostrar(id) {
+  document.getElementById('mov').classList.add('oculto');
+  document.getElementById('graf').classList.add('oculto');
+  document.getElementById('prev').classList.add('oculto');
+  document.getElementById('aula').classList.add('oculto');
+
+  document.getElementById(id).classList.remove('oculto');
+
+  document.getElementById('tMov').classList.remove('ativa');
+  document.getElementById('tGraf').classList.remove('ativa');
+  document.getElementById('tPrev').classList.remove('ativa');
+  document.getElementById('tAula').classList.remove('ativa');
+
+  document.getElementById(id === 'mov' ? 'tMov' : id === 'graf' ? 'tGraf' : id === 'prev' ? 'tPrev' : 'tAula').classList.add('ativa');
+}
+
+render();
+
+function calcularSaldoAtual() {
+  let saldo = 0;
+  movimentos.forEach(m => {
+    const meses = mesesAteHoje(m.data);
+    let entrada = m.credito ? aplicarJuros(m.credito, meses) : 0;
+    saldo += entrada;
+    saldo -= m.debito;
+  });
+  return saldo;
+}
+
+function atualizarPrevisoes() {
+  const base = calcularSaldoAtual();
+  const caixa = document.getElementById('previsoes');
+
+  const prazos = [3, 6, 12, 24];
+
+  caixa.innerHTML = prazos.map(m => {
+    const futuro = aplicarJuros(base, m);
+    return `<div class='linha'>
+      <div>Em ${m} meses</div>
+      <div class='valor-entrada'>R$ ${futuro.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+</script>
+
+</body>
+</html>
