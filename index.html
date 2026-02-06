@@ -4,8 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Vini Bank</title>
+
+<!-- Ícone para instalar no celular -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23820ad1'/><text x='50' y='50' text-anchor='middle' dominant-baseline='middle' font-size='48' fill='white' font-family='Arial' font-weight='bold'>VB</text></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23820ad1'/><text x='50' y='50' text-anchor='middle' dominant-baseline='middle' font-size='48' fill='white' font-family='Arial' font-weight='bold'>VB</text></svg>">
+
 <style>
 body {
   font-family: 'Segoe UI', Arial;
@@ -30,7 +33,6 @@ body {
 .logo span {
   font-weight: bold;
   font-size: 19px;
-  letter-spacing: .5px;
 }
 
 .container {
@@ -38,14 +40,8 @@ body {
   margin: auto;
 }
 
-.nome { font-size: 15px; opacity: .95; }
-
-.saldo {
-  font-size: 28px;
-  font-weight: bold;
-  margin-top: 6px;
-  letter-spacing: .5px;
-}
+.nome { font-size: 15px; }
+.saldo { font-size: 28px; font-weight: bold; margin-top: 6px; }
 
 .card {
   background: white;
@@ -53,7 +49,6 @@ body {
   padding: 16px;
   border-radius: 16px;
   box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-  transition: transform .1s;
 }
 
 .tabs {
@@ -63,7 +58,6 @@ body {
   background: white;
   padding: 6px;
   border-radius: 14px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
 }
 
 .tab {
@@ -71,34 +65,21 @@ body {
   text-align: center;
   padding: 10px 6px;
   border-radius: 10px;
-  background: transparent;
   cursor: pointer;
   font-weight: 600;
   font-size: 13px;
-  color: #555;
-  transition: all .2s;
 }
 
-.tab.ativa {
-  background: #820ad1;
-  color: white;
-  box-shadow: 0 3px 8px rgba(130,10,209,0.35);
-}
+.tab.ativa { background: #820ad1; color: white; }
 
 .linha {
   display: flex;
   justify-content: space-between;
   padding: 13px 4px;
   border-bottom: 1px solid #f0f0f0;
-  animation: aparecer .2s ease;
 }
 
 .linha:last-child { border-bottom: none; }
-
-@keyframes aparecer {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 .data { font-size: 13px; color: #666; }
 
@@ -119,11 +100,6 @@ body {
 }
 
 .oculto { display: none; }
-
-p {
-  line-height: 1.5;
-  color: #333;
-}
 </style>
 </head>
 <body>
@@ -156,23 +132,9 @@ p {
 
   <div id="aula" class="card oculto">
     <strong>Juros explicados para o Enzo 😊</strong>
-
-    <p>Juros é como um "prêmio" por deixar o dinheiro guardado.</p>
-
-    <p>Imagine que seu dinheiro é uma sementinha 🌱.<br>
-    Todo mês ela cresce um pouquinho sozinha.</p>
-
-    <p>Se você guarda <b>R$ 10</b> e o banco paga <b>5% ao mês</b>,
-    no mês seguinte vira <b>R$ 10,50</b>.</p>
-
-    <p>No outro mês cresce de novo, e assim vai:
-    dinheiro fazendo mais dinheiro!</p>
-
-    <p>Por isso vale a pena:
-    <b>guardar → esperar → ver crescer</b> 🚀</p>
+    <p>Juros é como um prêmio por deixar o dinheiro guardado.</p>
+    <p>Se você guarda R$10 e rende 5% ao mês, vira R$10,50.</p>
   </div>
-
-  
 
   <div id="mov" class="card">
     <strong>Movimentações</strong>
@@ -213,6 +175,40 @@ function aplicarJuros(valor, meses) {
   return valor * Math.pow(1.05, meses);
 }
 
+function render() {
+  let saldo = 0;
+  const lista = document.getElementById('lista');
+  lista.innerHTML = '';
+
+  movimentos.forEach(m => {
+    // Exibe apenas valor original
+    const entrada = m.credito;
+    const saida = m.debito;
+
+    // Juros entram somente no saldo total
+    saldo += aplicarJuros(m.credito, mesesAteHoje(m.data));
+    saldo -= m.debito;
+
+    const div = document.createElement('div');
+    div.className = 'linha';
+
+    div.innerHTML = `
+      <div class='data'>${formatarData(m.data)}</div>
+      <div>
+        ${m.credito 
+          ? `<span class='valor-entrada'>+ R$ ${entrada.toFixed(2)}</span>`
+          : `<span class='valor-saida'>- R$ ${saida.toFixed(2)}</span>`}
+      </div>`;
+
+    lista.appendChild(div);
+  });
+
+  document.getElementById('saldo').innerText = 'R$ ' + saldo.toFixed(2);
+
+  desenharGrafico();
+  atualizarPrevisoes();
+}
+
 function calcularSerie() {
   if (movimentos.length === 0) return [];
 
@@ -245,40 +241,6 @@ function calcularSerie() {
   return pontos;
 }
 
-function render() {
-  atualizarPrevisoes();
-  let saldo = 0;
-  const lista = document.getElementById('lista');
-  lista.innerHTML = '';
-
-  movimentos.forEach(m => {
-    const meses = mesesAteHoje(m.data);
-
-    let entrada = m.credito ? aplicarJuros(m.credito, meses) : 0;
-    let saida = m.debito;
-
-    saldo += entrada;
-    saldo -= saida;
-
-    const div = document.createElement('div');
-    div.className = 'linha';
-
-    div.innerHTML = `
-      <div class='data'>${formatarData(m.data)}</div>
-      <div>
-        ${m.credito 
-          ? `<span class='valor-entrada'>+ R$ ${entrada.toFixed(2)}</span>`
-          : `<span class='valor-saida'>- R$ ${saida.toFixed(2)}</span>`}
-      </div>`;
-
-    lista.appendChild(div);
-  });
-
-  document.getElementById('saldo').innerText = 'R$ ' + saldo.toFixed(2);
-
-  desenharGrafico();
-}
-
 let grafico;
 
 function desenharGrafico() {
@@ -297,43 +259,17 @@ function desenharGrafico() {
         borderColor: '#820ad1',
         backgroundColor: 'rgba(130,10,209,0.1)',
         fill: true,
-        tension: 0.25,
-        pointRadius: 3
+        tension: 0.25
       }]
     },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
-      },
-      plugins: { legend: { display: false } }
-    }
+    options: { plugins: { legend: { display: false } } }
   });
 }
-
-function mostrar(id) {
-  document.getElementById('mov').classList.add('oculto');
-  document.getElementById('graf').classList.add('oculto');
-  document.getElementById('prev').classList.add('oculto');
-  document.getElementById('aula').classList.add('oculto');
-
-  document.getElementById(id).classList.remove('oculto');
-
-  document.getElementById('tMov').classList.remove('ativa');
-  document.getElementById('tGraf').classList.remove('ativa');
-  document.getElementById('tPrev').classList.remove('ativa');
-  document.getElementById('tAula').classList.remove('ativa');
-
-  document.getElementById(id === 'mov' ? 'tMov' : id === 'graf' ? 'tGraf' : id === 'prev' ? 'tPrev' : 'tAula').classList.add('ativa');
-}
-
-render();
 
 function calcularSaldoAtual() {
   let saldo = 0;
   movimentos.forEach(m => {
-    const meses = mesesAteHoje(m.data);
-    let entrada = m.credito ? aplicarJuros(m.credito, meses) : 0;
-    saldo += entrada;
+    saldo += aplicarJuros(m.credito, mesesAteHoje(m.data));
     saldo -= m.debito;
   });
   return saldo;
@@ -343,7 +279,7 @@ function atualizarPrevisoes() {
   const base = calcularSaldoAtual();
   const caixa = document.getElementById('previsoes');
 
-  const prazos = [3, 6, 12, 24];
+  const prazos = [3,6,12,24];
 
   caixa.innerHTML = prazos.map(m => {
     const futuro = aplicarJuros(base, m);
@@ -353,6 +289,25 @@ function atualizarPrevisoes() {
     </div>`;
   }).join('');
 }
+
+function mostrar(id) {
+  ['mov','graf','prev','aula'].forEach(p => 
+    document.getElementById(p).classList.add('oculto')
+  );
+
+  document.getElementById(id).classList.remove('oculto');
+
+  ['tMov','tGraf','tPrev','tAula'].forEach(t =>
+    document.getElementById(t).classList.remove('ativa')
+  );
+
+  document.getElementById(
+    id === 'mov' ? 'tMov' : id === 'graf' ? 'tGraf' : id === 'prev' ? 'tPrev' : 'tAula'
+  ).classList.add('ativa');
+}
+
+// inicialização
+render();
 </script>
 
 </body>
